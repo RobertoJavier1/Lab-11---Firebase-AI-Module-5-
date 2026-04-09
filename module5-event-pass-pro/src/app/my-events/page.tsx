@@ -36,7 +36,7 @@ export default function MyEventsPage() {
     }
 
     return (
-      <main className="container py-8">
+      <main className="container mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold mb-6">Mis Eventos</h1>
 
         {events.length === 0 ? (

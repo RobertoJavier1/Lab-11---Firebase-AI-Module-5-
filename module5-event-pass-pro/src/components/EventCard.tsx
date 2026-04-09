@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button';
 import type { Event } from '@/types/event';
 import { CATEGORY_LABELS, STATUS_LABELS } from '@/types/event';
 import { formatShortDate, formatPrice, getAvailableSpots } from '@/lib/utils';
+import { DeleteEventButton } from '@/components/DeleteEventButton';
 
 interface EventCardProps {
   event: Event;
@@ -113,10 +114,14 @@ export function EventCard({ event, currentUserId }: EventCardProps): React.React
       <CardFooter className="flex items-center justify-between">
         <p className="text-lg font-bold text-primary">{formatPrice(event.price)}</p>
         <div className="flex gap-2">
+          {/*mostrar acciones de editar y eliminar solo al dueño del evento */}
           {currentUserId && currentUserId === event.organizerId && (
-            <Button asChild variant="outline" size="sm">
-              <Link href={`/events/${event.id}/edit`}>Editar</Link>
-            </Button>
+            <>
+              <Button asChild variant="outline" size="sm">
+                <Link href={`/events/${event.id}/edit`}>Editar</Link>
+              </Button>
+              <DeleteEventButton eventId={event.id} eventTitle={event.title} />
+            </>
           )}
           <Button asChild variant={isAvailable ? 'default' : 'secondary'} size="sm">
             <Link href={`/events/${event.id}`}>{isAvailable ? 'Ver detalles' : 'Ver evento'}</Link>

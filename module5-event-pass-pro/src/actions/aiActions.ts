@@ -188,3 +188,60 @@ export async function generateEventPosterAction(prompt: string, eventId?: string
         return { success: false, error: 'Failed to generate poster.' };
     }
 }
+
+  export interface GeneratedVariants {
+    variants: string[];
+  }
+
+//genera 3 variantes de descripcion para un evento usando Gemini AI segun el tono indicado
+export async function generateEventVariantsAction(
+    title: string,
+    tone: 'formal' | 'casual' | 'exciting'
+  ): Promise<{ success: boolean; data?: GeneratedVariants; error?: string }> {
+    try {
+      if (!process.env.GEMINI_API_KEY) {
+        throw new Error('GEMINI_API_KEY is not configured');
+      }
+
+      if (!title || title.length < 3) {
+        return { success: false, error: 'Escribe un título válido primero' };
+      }
+
+      const toneDescriptions = {
+        formal: 'professional, formal and corporate tone',
+        casual: 'friendly, casual and approachable tone',
+        exciting: 'energetic, exciting and enthusiastic tone',
+      };
+
+      const client = getGeminiClient();
+
+      const prompt = `
+        You are an expert event copywriter. Generate 3 different descriptions for an event titled "${title}".
+        Use a ${toneDescriptions[tone]}.
+        Each description should be 2-3 sentences, under 300 characters.
+
+        Return strictly valid JSON with this structure:
+        {
+          "variants": ["description1", "description2", "description3"]
+        }
+        No markdown, no explanations, just the JSON.
+      `;
+
+      const result = await client.models.generateContent({
+        model: GEMINI_MODELS.TEXT,
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        config: { responseMimeType: 'application/json' },
+      });
+
+      const text = result.text;
+      if (!text) throw new Error('No content generated');
+
+      const cleanedText = text.replace(/```json\n?|\n?```/g, '').trim();
+      const data = JSON.parse(cleanedText) as GeneratedVariants;
+
+      return { success: true, data };
+    } catch (error) {
+      console.error('Gemini Variants Error:', error);
+      return { success: false, error: 'No se pudieron generar las variantes. Intenta de nuevo.' };
+    }
+}

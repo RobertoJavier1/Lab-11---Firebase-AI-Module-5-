@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { createEventAction, updateEventAction } from '@/actions/eventActions';
-import { generateEventDetailsAction, generateEventPosterAction } from '@/actions/aiActions';
+import { generateEventPosterAction, generateEventVariantsAction } from '@/actions/aiActions';
 import { EVENT_CATEGORIES, EVENT_STATUSES, CATEGORY_LABELS, STATUS_LABELS } from '@/types/event';
 import type { FormState, Event } from '@/types/event';
 import { Sparkles } from 'lucide-react';
@@ -35,8 +35,14 @@ const initialState: FormState = {
   message: '',
 };
 
-function MagicGenerateButton({ onGenerate, onStart, onEnd }: { onGenerate: (data: any) => void, onStart: () => void, onEnd: () => void }) {
+
+//componente que permite generar y seleccionar 3 descripciones usando Gemini
+//muestra 3 variantes segun el tono elegido  y al hacer clic en una la inserta en el formulario
+function VariantsSelector({ onSelect }: { onSelect: (description: string) => void }) {
+  const [tone, setTone] = useState<'formal' | 'casual' | 'exciting'>('casual');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [variants, setVariants] = useState<string[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   const handleGenerate = async () => {
     const titleInput = document.getElementById('title') as HTMLInputElement;
@@ -52,47 +58,58 @@ function MagicGenerateButton({ onGenerate, onStart, onEnd }: { onGenerate: (data
     }
 
     setIsGenerating(true);
-    onStart();
-    try {
-      const result = await generateEventDetailsAction(title);
-
-      if (result.success && result.data) {
-        onGenerate(result.data);
-        toast({
-          title: "✨ Magia Generada",
-          description: "Se han completado los detalles con ayuda de Gemini AI.",
-        });
-      } else {
-        toast({
-          title: "Error",
-          description: result.error || "No se pudo generar el contenido",
-          variant: "destructive"
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Ocurrió un error inesperado",
-        variant: "destructive",
-      });
-    } finally {
-      setIsGenerating(false);
-      onEnd();
+    setError(null);
+    setVariants([]);
+    const result = await generateEventVariantsAction(title, tone);
+    if (result.success && result.data) {
+      setVariants(result.data.variants);
+    } else {
+      setError(result.error || 'Error al generar variantes');
     }
+
+    setIsGenerating(false);
   };
 
   return (
-    <Button
-      type="button"
-      variant="ghost"
-      size="sm"
-      className="absolute right-0 top-0 h-full px-3 text-muted-foreground hover:text-primary"
-      onClick={handleGenerate}
-      disabled={isGenerating}
-    >
-      <Sparkles className={`h-4 w-4 mr-2 ${isGenerating ? 'animate-spin' : ''}`} />
-      {isGenerating ? 'Generando...' : 'Generar con IA'}
-    </Button>
+    <div className="space-y-3 rounded-md border p-4">
+       <p className="text-sm font-medium">Generar variantes de descripción con IA</p>
+
+      <div className="flex items-center gap-3">
+        <Select value={tone} onValueChange={(v) => setTone(v as any)}>
+          <SelectTrigger className="w-40">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="formal">Formal</SelectItem>
+            <SelectItem value="casual">Casual</SelectItem>
+            <SelectItem value="exciting">Emocionante</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Button type="button" size="sm" onClick={handleGenerate} disabled={isGenerating}>
+          <Sparkles className={`h-4 w-4 mr-2 ${isGenerating ? 'animate-spin' : ''}`} />
+          {isGenerating ? 'Generando...' : 'Generar 3 variantes'}
+        </Button>
+      </div>
+
+      {error && <p className="text-sm text-destructive">{error}</p>}
+
+      {variants.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs text-muted-foreground">Elige una variante:</p>
+          {variants.map((variant, index) => (
+            <div
+              key={index}
+              className="cursor-pointer rounded-md border p-3 text-sm hover:border-primary hover:bg-primary/5 transition-colors"
+              onClick={() => onSelect(variant)}
+            >
+              <span className="font-medium text-primary mr-2">#{index + 1}</span>
+              {variant}
+            </div>
+        ))}
+          </div>
+        )}
+    </div>
   );
 }
 
@@ -267,25 +284,19 @@ export function EventForm({ event, mode = 'create' }: EventFormProps) {
                   defaultValue={getDefault('title')}
                   required
                 />
-                {!isEditing && (
-                  <MagicGenerateButton
-                    onStart={() => setIsAiGenerating(true)}
-                    onEnd={() => setIsAiGenerating(false)}
-                    onGenerate={(data) => {
-                      const descInput = document.getElementById('description') as HTMLTextAreaElement;
-                      if (descInput) descInput.value = data.description;
-
-                      const tagsInput = document.getElementById('tags') as HTMLInputElement;
-                      if (tagsInput) tagsInput.value = data.tags.join(', ');
-                    }}
-                  />
-                )}
               </div>
               <FieldError errors={state.errors?.title} />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="description">Descripción *</Label>
+              {/*al seleccionar una variante inserta el texto directamente en el textarea de descripcion*/}
+              <VariantsSelector
+                onSelect={(description) => {
+                  const descInput = document.getElementById('description') as HTMLTextAreaElement;
+                  if (descInput) descInput.value = description;
+                }}
+              />
               <Textarea
                 id="description"
                 name="description"

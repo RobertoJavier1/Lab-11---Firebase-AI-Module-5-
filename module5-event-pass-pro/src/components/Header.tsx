@@ -40,6 +40,9 @@ export function Header(): React.ReactElement {
           <Link href="/events" className="text-sm font-medium hover:text-primary">
             Eventos
           </Link>
+          <Link href="/my-events" className="text-sm font-medium hover:text-primary">
+            Mis Eventos
+          </Link>
           <UserMenu />
         </nav>
       </div>

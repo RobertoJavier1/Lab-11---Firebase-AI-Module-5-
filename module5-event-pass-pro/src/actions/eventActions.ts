@@ -11,6 +11,7 @@ import {
   registerForEvent as registerInDb,
 } from '@/data/events';
 import { adminAuth } from '@/lib/firebase/admin';
+import type { Event } from '@/types/event';
 
 // =============================================================================
 // AUTENTICACIÓN EN SERVER ACTIONS
@@ -365,4 +366,10 @@ export async function registerForEventAction(id: string): Promise<FormState> {
       message: error.message || 'Error al registrarse',
     };
   }
+}
+
+//trae los eventos del organizador desde Firestore
+export async function getMyEvents(organizerId: string): Promise<Event[]> {
+  const { getEventsByOrganizer } = await import('@/lib/firebase/firestore');
+  return getEventsByOrganizer(organizerId);
 }

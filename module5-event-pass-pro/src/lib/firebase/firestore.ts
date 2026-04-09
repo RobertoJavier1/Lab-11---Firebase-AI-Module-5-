@@ -223,3 +223,23 @@ export async function registerForEvent(eventId: string, userId: string): Promise
     } as Event;
   });
 }
+
+//devuelve los eventos de un organizador, ordenados por fecha, con fechas en formato ISO.
+export async function getEventsByOrganizer(organizerId: string): Promise<Event[]> {
+  const snapshot = await adminDb
+  .collection(EVENTS_COLLECTION)
+  .where('organizerId', '==', organizerId)
+  .orderBy('date', 'asc')
+  .get();
+
+  return snapshot.docs.map(doc => {
+      const data = doc.data();
+    return {
+      id: doc.id,
+      ...data,
+      date: data.date.toDate().toISOString(),
+      createdAt: data.createdAt?.toDate().toISOString(),
+      updatedAt: data.updatedAt?.toDate().toISOString(),
+    } as Event;
+  });
+}

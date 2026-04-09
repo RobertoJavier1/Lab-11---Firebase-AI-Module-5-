@@ -100,11 +100,17 @@ function VariantsSelector({ onSelect }: { onSelect: (description: string) => voi
           {variants.map((variant, index) => (
             <div
               key={index}
-              className="cursor-pointer rounded-md border p-3 text-sm hover:border-primary hover:bg-primary/5 transition-colors"
-              onClick={() => onSelect(variant)}
+              className="rounded-md border p-3 text-sm space-y-2"
             >
-              <span className="font-medium text-primary mr-2">#{index + 1}</span>
-              {variant}
+              <p><span className="font-medium text-primary mr-2">#{index + 1}</span>{variant}</p>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => onSelect(variant)}
+              >
+                Aplicar
+              </Button>
             </div>
         ))}
           </div>
